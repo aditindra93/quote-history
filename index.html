@@ -5,6 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Layout: satu kolom lebar 1120px, kaca bening di atas latar gradien lembut. Menu ikon di kanan atas, beranda berisi dua kartu besar (Cari, Tambah) dan panel Google Sheet. */
 :root{
   --bg:#E7EFEC; --blob1:rgba(122,204,190,.75); --blob2:rgba(247,207,148,.7); --blob3:rgba(160,184,236,.65);
   --fg:#10201D; --fg-2:#43605A; --fg-3:#6B847F;
@@ -64,6 +65,7 @@ a{color:inherit}
   -webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7)}
 .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,var(--sheen) 0,transparent 38%);opacity:.55;pointer-events:none}
 .card{padding:26px}
+/* header + menu ikon */
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
 .brand{display:flex;flex-direction:column;gap:2px;text-decoration:none}
 .brand b{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-.02em}
@@ -75,6 +77,7 @@ a{color:inherit}
 .nav svg{width:21px;height:21px}
 .nav a:focus-visible,.btn:focus-visible,.tile:focus-visible,.ccard:focus-visible,.xbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .note{padding:12px 18px;border-radius:16px;font-size:13.5px;color:var(--fg-2)}
+/* home */
 .hero{display:flex;flex-direction:column;gap:8px;padding:6px 2px}
 .hero h1{font-size:clamp(30px,5vw,46px);line-height:1.05}
 .hero p{max-width:56ch;color:var(--fg-2)}
@@ -94,6 +97,7 @@ a{color:inherit}
 .recent .who{font-weight:600}
 .recent .what{color:var(--fg-2)}
 .recent .when{font-size:12.5px;color:var(--fg-3)}
+/* panel google sheet */
 .msg{margin-top:14px;padding:12px 16px;border-radius:14px;font-size:14px;font-weight:600}
 .msg.ok{background:var(--good-soft);color:var(--good)}
 .msg.err{background:var(--warn-soft);color:var(--warn)}
@@ -103,6 +107,7 @@ a{color:inherit}
 .gspreview b{font-family:var(--font-display);font-size:16px}
 .filebar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-edge)}
 .filebar .lbl{margin-right:6px}
+/* forms */
 .pagehead{display:flex;flex-direction:column;gap:6px;padding:0 4px}
 .pagehead h2{font-size:clamp(24px,4vw,32px)}
 .pagehead p{color:var(--fg-2);max-width:62ch}
@@ -147,6 +152,7 @@ input:disabled{opacity:.5}
 .btn.sm{padding:6px 13px;font-size:12.5px}
 .btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
 .err{margin-top:16px;padding:11px 16px;border-radius:14px;background:var(--warn-soft);color:var(--warn);font-weight:600;font-size:14px}
+/* tabel item massal */
 .itemtbl{width:100%;border-collapse:collapse;min-width:900px}
 .itemtbl th{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);text-align:left;padding:8px 8px;white-space:nowrap;font-weight:700}
 .itemtbl td{padding:7px 8px;border-top:1px solid var(--glass-edge);vertical-align:middle}
@@ -159,6 +165,7 @@ input:disabled{opacity:.5}
 .xbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--field-border);background:var(--field);color:var(--fg-2);cursor:pointer;font-size:18px;line-height:1}
 .xbtn:hover{color:var(--danger);border-color:var(--danger)}
 .tbltools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+/* chips + tabel detail */
 .chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--off-soft);color:var(--fg-2)}
 .chip.good{background:var(--good-soft);color:var(--good)}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
@@ -182,6 +189,7 @@ th.num{text-align:right}
 .rowact{display:flex;gap:6px;flex-wrap:wrap}
 .empty{padding:38px 24px;text-align:center;color:var(--fg-2);display:flex;flex-direction:column;gap:8px;align-items:center}
 .empty b{font-family:var(--font-display);font-size:18px;color:var(--fg)}
+/* kartu customer: maksimal 2 baris, sisanya geser ke samping */
 .railhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px}
 .railhead span.info{font-size:13px;color:var(--fg-2)}
 .railbtns{display:flex;gap:8px}
@@ -194,6 +202,7 @@ th.num{text-align:right}
 .ccard .cs{display:flex;flex-wrap:wrap;gap:6px}
 .ccard .cm{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--fg-2)}
 .ccard .cgo{margin-top:auto;font-weight:700;font-size:13px;color:var(--accent)}
+/* detail: bar nama customer menempel di atas */
 .stickybar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:6;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:20px}
 .stickybar .back{display:inline-flex;align-items:center;gap:6px;flex:none}
 .stickybar .back svg{width:16px;height:16px}
@@ -205,6 +214,7 @@ th.num{text-align:right}
 .qhead .qm{display:flex;flex-direction:column;gap:4px}
 .qhead .qr{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
 .qinfo{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--fg-2)}
+/* customers */
 .custgrid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
 .custlist{display:flex;flex-direction:column;padding:0 14px 8px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .custtools{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--glass-edge)}
@@ -404,8 +414,9 @@ th.num{text-align:right}
 <script>
 (function(){
 'use strict';
-// GANTI DENGAN URL WEB APP APPS SCRIPT ANDA (Wajib berakhiran /exec)
-var GAS_API_URL = "https://script.google.com/macros/s/AKfycbw3_iG6ijlCqtf5BssBVSOnlvKTtauhuCCw-p1I8WL4RRROkReN-LqqMzyV4g1tObmt/exec";
+
+// PASTE URL WEB APP APPS SCRIPT ANDA DI SINI (WAJIB BERAKHIRAN /exec)
+var GAS_API_URL = https://script.google.com/macros/s/AKfycbxJ-7UdNjfimQ6yDQZ7VglqppTvsIh_uK_FNUMgfmMV0c1I5UexvDS2KYaP5M-wVlNe5w/exec;
 
 var GS_SERVER='Google Sheets';
 var $=function(s){return document.querySelector(s)};
@@ -415,7 +426,7 @@ var state={customers:[],quotations:[],loaded:false,route:'',editId:null,rows:[],
   gs:{busy:false,msg:null,confirmExport:false,imp:null}};
 var db=null,mcp=null,dl=null;
 
-/* ---------- SINKRONISASI GOOGLE APPS SCRIPT CLOUD ---------- */
+/* ---------- SINKRONISASI CLOUD VIA GOOGLE APPS SCRIPT ---------- */
 function fetchCloudData() {
   if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
   
@@ -440,7 +451,7 @@ function fetchCloudData() {
       }
     })
     .catch(function(err) {
-      console.error('Gagal memuat Cloud:', err);
+      console.error('Gagal mengambil data dari cloud:', err);
       state.loaded = true;
       hideNote();
       afterData();
@@ -462,12 +473,12 @@ function syncToCloud() {
   })
   .then(function(res) { return res.json(); })
   .catch(function(err) {
-    console.error('Gagal simpan Cloud:', err);
+    console.error('Gagal menyimpan ke cloud:', err);
   });
 }
 
 /* ---------- helpers ---------- */
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&','<':'<','>':'>','"':'"',"'":'''}[c]})}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&','<':'<','>':'>','"':'"',"'":'\''}[c]})}
 function pad(n){return String(n).padStart(2,'0')}
 function toStr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function today(){return toStr(new Date())}
@@ -492,6 +503,7 @@ function lsGetS(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
 function lsSetS(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
 function readNum(sel){var v=$(sel).value;return v===''?NaN:parseFloat(v)}
 
+/* margin = (harga - cost) / harga, cost dikonversi ke mata uang quote */
 function calcMargin(price,pc,cost,cc,rate){
   if(!(price>0)||isNaN(cost)||cost<0)return null;
   var c=cost;
@@ -505,6 +517,7 @@ function avgMargin(qs){
   qs.forEach(function(r){if(Array.isArray(r.items))r.items.forEach(function(it){var m=itemM(it,r.rate);if(m){s+=m.pct;n++}})});
   return n?s/n:null;
 }
+
 function norm(r){
   var o={};for(var k in r)o[k]=r[k];
   var items=Array.isArray(r.items)?r.items:[{item:r.item,price:r.price,priceCur:r.priceCur,cost:r.cost,costCur:r.costCur,terms:r.terms,remarks:r.remarks}];
@@ -567,6 +580,7 @@ function sortedQuotes(list){
     return (b.createdAt||0)-(a.createdAt||0);
   });
 }
+
 function estPre(cur){return cur==='USD'?'Est. ':''}
 function allUsd(items){return items.length>0&&items.every(function(it){return it.priceCur==='USD'})}
 function qItems(qs){var a=[];qs.forEach(function(r){if(Array.isArray(r.items))a=a.concat(r.items)});return a}
@@ -949,12 +963,13 @@ $('#custList').addEventListener('click',function(e){
   else if(act==='cdelok'){state.pendingCDel=null;delDoc('customers',id).then(function(){toast('Customer dihapus. Riwayat quotation tetap tersimpan.')},function(){toast('Gagal menghapus')})}
 });
 
-/* ---------- init ---------- */
+/* ---------- INIALISASI APLIKASI ---------- */
 $('#fDate').value=today();
 setLockUI(false);
 addRows(5);renderRows();
 
 (function init(){
+  // Muat data cadangan lokal terlebih dahulu agar UI langsung responsif
   state.customers=lsGet('rq_customers');
   state.quotations=lsGet('rq_quotations').map(norm);
   state.loaded=true;
@@ -962,7 +977,7 @@ addRows(5);renderRows();
   route();
   afterData();
   
-  // Panggil cloud sync di background tanpa memblokir UI lokal
+  // Ambil data terbaru dari cloud di latar belakang
   fetchCloudData();
 })();
 })();
