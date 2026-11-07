@@ -606,25 +606,34 @@ function fetchCloudData() {
     .then(function(data) {
       if (data) {
         var updated = false;
+        
         if (Array.isArray(data.customers) && data.customers.length > 0) {
           state.customers = data.customers;
           lsSet('rq_customers', data.customers);
           updated = true;
         }
+        
         if (Array.isArray(data.quotations) && data.quotations.length > 0) {
-          state.quotations = data.quotations.map(norm);
+          // Sanitasi data agar norm() tidak error jika ada field null/undefined
+          state.quotations = data.quotations.map(function(q) {
+            if (!q.items) q.items = [];
+            return norm(q);
+          });
           lsSet('rq_quotations', state.quotations);
           updated = true;
         }
-        if (updated) {
-          state.loaded = true;
-          hideNote();
-          afterData(); // Memperbarui tampilan UI di HP & Laptop
-        }
+        
+        state.loaded = true;
+        hideNote();
+        afterData(); // Memperbarui UI & mengaktifkan kembali tab/tombol
       }
     })
     .catch(function(err) {
-      console.error('Gagal mengambil data dari cloud:', err);
+      console.error('Gagal memuat dari Cloud:', err);
+      // Jika cloud gagal, pastikan state lokal tetap jalan agar tab tidak macet
+      state.loaded = true;
+      hideNote();
+      afterData();
     });
 }
 
@@ -642,11 +651,8 @@ function syncToCloud() {
     body: JSON.stringify(payload)
   })
   .then(function(res) { return res.json(); })
-  .then(function(resData) {
-    console.log('Sync cloud sukses:', resData);
-  })
   .catch(function(err) {
-    console.error('Sync cloud gagal:', err);
+    console.error('Sync POST gagal:', err);
   });
 }
 
