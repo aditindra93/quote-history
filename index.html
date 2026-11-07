@@ -596,7 +596,6 @@ function buildImport(q,c){
 }
 
 /* ---------- storage ---------- */
-// Tempel URL Web App dari Apps Script Anda di dalam tanda kutip ini:
 var GAS_API_URL = "https://script.google.com/macros/s/AKfycbw3_iG6ijlCqtf5BssBVSOnlvKTtauhuCCw-p1I8WL4RRROkReN-LqqMzyV4g1tObmt/exec";
 
 function fetchCloudData() {
@@ -606,37 +605,51 @@ function fetchCloudData() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (data) {
+        var updated = false;
         if (Array.isArray(data.customers) && data.customers.length > 0) {
           state.customers = data.customers;
-          lsSet('rq_customers', data.customers); // Simpan cadangan ke localStorage
+          lsSet('rq_customers', data.customers);
+          updated = true;
         }
         if (Array.isArray(data.quotations) && data.quotations.length > 0) {
           state.quotations = data.quotations.map(norm);
-          lsSet('rq_quotations', state.quotations); // Simpan cadangan ke localStorage
+          lsSet('rq_quotations', state.quotations);
+          updated = true;
         }
-        state.loaded = true;
-        hideNote();
-        afterData(); // WAJIB: Memperbarui tampilan UI HP & Laptop secara langsung!
+        if (updated) {
+          state.loaded = true;
+          hideNote();
+        afterData(); // Memperbarui UI di HP/Laptop secara otomatis
+        }
       }
     })
     .catch(function(err) {
-      console.error('Gagal mengambil data dari Google Sheet:', err);
+      console.error('Gagal mengambil data Cloud:', err);
     });
 }
 
 function syncToCloud() {
   if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
   
+  var payload = {
+    customers: state.customers,
+    quotations: state.quotations
+  };
+
   fetch(GAS_API_URL, {
     method: 'POST',
-    mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      customers: state.customers,
-      quotations: state.quotations
-    })
+    body: JSON.stringify(payload)
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(resData) {
+    console.log('Sync Cloud Berhasil:', resData);
+  })
+  .catch(function(err) {
+    console.error('Sync Cloud Gagal:', err);
   });
 }
+
 function saveDoc(coll,id,data){
   if(db){return db.collection(coll).doc(id).set(data).then(function(r){scheduleSync();return r})}
   var arr=state[coll].filter(function(x){return x.id!==id});
