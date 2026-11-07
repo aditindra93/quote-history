@@ -527,18 +527,34 @@ function norm(r){
 }
 
 /* ---------- storage ---------- */
-function saveDoc(coll,id,data){
-  if(db){return db.collection(coll).doc(id).set(data).then(function(r){scheduleSync();syncToCloud();return r})}
-  var arr=state[coll].filter(function(x){return x.id!==id});
-  var o={id:id};for(var k in data)o[k]=data[k];
-  arr.push(coll==='quotations'?norm(o):o);
-  state[coll]=arr;lsSet('rq_'+coll,arr);afterData();scheduleSync();syncToCloud();
+function saveDoc(coll, id, data) {
+  if (db) {
+    return db.collection(coll).doc(id).set(data).then(function(r) {
+      syncToCloud();
+      return r;
+    });
+  }
+  var arr = state[coll].filter(function(x) { return x.id !== id; });
+  var o = { id: id };
+  for (var k in data) o[k] = data[k];
+  arr.push(coll === 'quotations' ? norm(o) : o);
+  state[coll] = arr;
+  lsSet('rq_' + coll, arr);
+  afterData();
+  syncToCloud(); // <-- Berhasil simpan lokal & kirim ke Cloud tanpa error scheduleSync
   return Promise.resolve();
 }
-function delDoc(coll,id){
-  if(db){return db.collection(coll).doc(id).delete().then(function(r){scheduleSync();syncToCloud();return r})}
-  state[coll]=state[coll].filter(function(x){return x.id!==id});
-  lsSet('rq_'+coll,state[coll]);afterData();scheduleSync();syncToCloud();
+function delDoc(coll, id) {
+  if (db) {
+    return db.collection(coll).doc(id).delete().then(function(r) {
+      syncToCloud();
+      return r;
+    });
+  }
+  state[coll] = state[coll].filter(function(x) { return x.id !== id; });
+  lsSet('rq_' + coll, state[coll]);
+  afterData();
+  syncToCloud(); // <-- Berhasil hapus lokal & kirim ke Cloud
   return Promise.resolve();
 }
 function showNote(t){var n=$('#note');n.textContent=t;n.hidden=false}
