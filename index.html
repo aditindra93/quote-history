@@ -619,12 +619,12 @@ function fetchCloudData() {
         if (updated) {
           state.loaded = true;
           hideNote();
-        afterData(); // Memperbarui UI di HP/Laptop secara otomatis
+          afterData(); // Memperbarui tampilan UI di HP & Laptop
         }
       }
     })
     .catch(function(err) {
-      console.error('Gagal mengambil data Cloud:', err);
+      console.error('Gagal mengambil data dari cloud:', err);
     });
 }
 
@@ -643,27 +643,36 @@ function syncToCloud() {
   })
   .then(function(res) { return res.json(); })
   .then(function(resData) {
-    console.log('Sync Cloud Berhasil:', resData);
+    console.log('Sync cloud sukses:', resData);
   })
   .catch(function(err) {
-    console.error('Sync Cloud Gagal:', err);
+    console.error('Sync cloud gagal:', err);
   });
 }
 
 function saveDoc(coll,id,data){
-  if(db){return db.collection(coll).doc(id).set(data).then(function(r){scheduleSync();return r})}
+  if(db){return db.collection(coll).doc(id).set(data).then(function(r){scheduleSync();syncToCloud();return r})}
   var arr=state[coll].filter(function(x){return x.id!==id});
   var o={id:id};for(var k in data)o[k]=data[k];
   arr.push(coll==='quotations'?norm(o):o);
-  state[coll]=arr;lsSet('rq_'+coll,arr);afterData();scheduleSync();syncToCloud();
+  state[coll]=arr;
+  lsSet('rq_'+coll,arr);
+  afterData();
+  scheduleSync();
+  syncToCloud(); // <-- Kirim ke Cloud setiap simpan data
   return Promise.resolve();
 }
+
 function delDoc(coll,id){
-  if(db){return db.collection(coll).doc(id).delete().then(function(r){scheduleSync();return r})}
+  if(db){return db.collection(coll).doc(id).delete().then(function(r){scheduleSync();syncToCloud();return r})}
   state[coll]=state[coll].filter(function(x){return x.id!==id});
-  lsSet('rq_'+coll,state[coll]);afterData();scheduleSync();syncToCloud();
+  lsSet('rq_'+coll,state[coll]);
+  afterData();
+  scheduleSync();
+  syncToCloud(); // <-- Kirim ke Cloud setiap hapus data
   return Promise.resolve();
 }
+
 function showNote(t){var n=$('#note');n.textContent=t;n.hidden=false}
 function hideNote(){$('#note').hidden=true}
 function subscribe(){
@@ -1389,7 +1398,7 @@ addRows(5);renderRows();
 route();
 renderHome();renderCari();renderCustomers();refreshCustSelect();renderGS();
 (function init(){
-  fetchCloudData();
+  fetchCloudData(); // <-- Panggil di baris paling atas init()
 
   var p;
   try{p=Promise.resolve(window.claude&&window.claude.use?window.claude.use('db'):null)}catch(e){p=Promise.resolve(null)}
@@ -1409,7 +1418,6 @@ renderHome();renderCari();renderCustomers();refreshCustSelect();renderGS();
       else dl=v;
     });
   });
-})();
 })();
 </script>
 
