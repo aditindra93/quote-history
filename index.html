@@ -596,18 +596,59 @@ function buildImport(q,c){
 }
 
 /* ---------- storage ---------- */
+// Tempel URL Web App dari Apps Script Anda di dalam tanda kutip ini:
+var GAS_API_URL = "https://script.google.com/macros/s/AKfycbw3_iG6ijlCqtf5BssBVSOnlvKTtauhuCCw-p1I8WL4RRROkReN-LqqMzyV4g1tObmt/exec";
+
+// Ambil data terbaru dari Google Sheets saat aplikasi dibuka
+function fetchCloudData() {
+  if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
+  
+  fetch(GAS_API_URL)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data && data.customers) {
+        state.customers = data.customers;
+        lsSet('rq_customers', data.customers); // Simpan juga di lokal
+      }
+      if (data && data.quotations) {
+        state.quotations = data.quotations.map(norm);
+        lsSet('rq_quotations', state.quotations); // Simpan juga di lokal
+      }
+      state.loaded = true;
+      hideNote();
+      afterData(); // Update tampilan web secara langsung
+    })
+    .catch(function(err) {
+      console.error('Gagal mengambil data Cloud:', err);
+    });
+}
+
+// Kirim data terbaru ke Google Sheets setiap kali ada perubahan
+function syncToCloud() {
+  if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
+  
+  fetch(GAS_API_URL, {
+    method: 'POST',
+    mode: 'no-cors', // Penting agar POST dari browser tidak diblokir CORS
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      customers: state.customers,
+      quotations: state.quotations
+    })
+  });
+}
 function saveDoc(coll,id,data){
   if(db){return db.collection(coll).doc(id).set(data).then(function(r){scheduleSync();return r})}
   var arr=state[coll].filter(function(x){return x.id!==id});
   var o={id:id};for(var k in data)o[k]=data[k];
   arr.push(coll==='quotations'?norm(o):o);
-  state[coll]=arr;lsSet('rq_'+coll,arr);afterData();scheduleSync();
+  state[coll]=arr;lsSet('rq_'+coll,arr);afterData();scheduleSync();syncToCloud();
   return Promise.resolve();
 }
 function delDoc(coll,id){
   if(db){return db.collection(coll).doc(id).delete().then(function(r){scheduleSync();return r})}
   state[coll]=state[coll].filter(function(x){return x.id!==id});
-  lsSet('rq_'+coll,state[coll]);afterData();scheduleSync();
+  lsSet('rq_'+coll,state[coll]);afterData();syncToCloud();scheduleSync();
   return Promise.resolve();
 }
 function showNote(t){var n=$('#note');n.textContent=t;n.hidden=false}
@@ -1335,6 +1376,8 @@ addRows(5);renderRows();
 route();
 renderHome();renderCari();renderCustomers();refreshCustSelect();renderGS();
 (function init(){
+  // TAMBAHKAN BARIS INI:
+  fetchCloudData();
   var p;
   try{p=Promise.resolve(window.claude&&window.claude.use?window.claude.use('db'):null)}catch(e){p=Promise.resolve(null)}
   p.then(function(d){return d||null},function(){return null}).then(function(d){
