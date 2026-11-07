@@ -599,37 +599,37 @@ function buildImport(q,c){
 // Tempel URL Web App dari Apps Script Anda di dalam tanda kutip ini:
 var GAS_API_URL = "https://script.google.com/macros/s/AKfycbw3_iG6ijlCqtf5BssBVSOnlvKTtauhuCCw-p1I8WL4RRROkReN-LqqMzyV4g1tObmt/exec";
 
-// Ambil data terbaru dari Google Sheets saat aplikasi dibuka
 function fetchCloudData() {
   if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
   
   fetch(GAS_API_URL)
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (data && data.customers) {
-        state.customers = data.customers;
-        lsSet('rq_customers', data.customers); // Simpan juga di lokal
+      if (data) {
+        if (Array.isArray(data.customers) && data.customers.length > 0) {
+          state.customers = data.customers;
+          lsSet('rq_customers', data.customers); // Simpan cadangan ke localStorage
+        }
+        if (Array.isArray(data.quotations) && data.quotations.length > 0) {
+          state.quotations = data.quotations.map(norm);
+          lsSet('rq_quotations', state.quotations); // Simpan cadangan ke localStorage
+        }
+        state.loaded = true;
+        hideNote();
+        afterData(); // WAJIB: Memperbarui tampilan UI HP & Laptop secara langsung!
       }
-      if (data && data.quotations) {
-        state.quotations = data.quotations.map(norm);
-        lsSet('rq_quotations', state.quotations); // Simpan juga di lokal
-      }
-      state.loaded = true;
-      hideNote();
-      afterData(); // Update tampilan web secara langsung
     })
     .catch(function(err) {
-      console.error('Gagal mengambil data Cloud:', err);
+      console.error('Gagal mengambil data dari Google Sheet:', err);
     });
 }
 
-// Kirim data terbaru ke Google Sheets setiap kali ada perubahan
 function syncToCloud() {
   if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
   
   fetch(GAS_API_URL, {
     method: 'POST',
-    mode: 'no-cors', // Penting agar POST dari browser tidak diblokir CORS
+    mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       customers: state.customers,
@@ -648,7 +648,7 @@ function saveDoc(coll,id,data){
 function delDoc(coll,id){
   if(db){return db.collection(coll).doc(id).delete().then(function(r){scheduleSync();return r})}
   state[coll]=state[coll].filter(function(x){return x.id!==id});
-  lsSet('rq_'+coll,state[coll]);afterData();syncToCloud();scheduleSync();
+  lsSet('rq_'+coll,state[coll]);afterData();scheduleSync();syncToCloud();
   return Promise.resolve();
 }
 function showNote(t){var n=$('#note');n.textContent=t;n.hidden=false}
@@ -1376,8 +1376,8 @@ addRows(5);renderRows();
 route();
 renderHome();renderCari();renderCustomers();refreshCustSelect();renderGS();
 (function init(){
-  // TAMBAHKAN BARIS INI:
   fetchCloudData();
+
   var p;
   try{p=Promise.resolve(window.claude&&window.claude.use?window.claude.use('db'):null)}catch(e){p=Promise.resolve(null)}
   p.then(function(d){return d||null},function(){return null}).then(function(d){
