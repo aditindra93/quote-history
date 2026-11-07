@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body>
 <title>Riwayat Quotation</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -223,6 +224,12 @@ th.num{text-align:right}
 .nmlink:hover{color:var(--accent);text-decoration-color:currentColor}
 .nmlink:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 .gsstat{margin-top:12px;font-size:13px;color:var(--fg-3)}
+.gasstat{font-size:14px;font-weight:600;padding:12px 16px;border-radius:14px;background:var(--good-soft);color:var(--good)}
+.gasstat[data-k="err"]{background:var(--warn-soft);color:var(--warn)}
+.gsteps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--fg-2);font-size:14px}
+details.how summary{cursor:pointer;font-weight:700;color:var(--accent);padding:4px 0}
+.codebox{width:100%;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;min-height:150px;white-space:pre}
+.pill{align-self:center}
 .custrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:14px 4px;border-top:1px solid var(--glass-edge)}
 .custrow:first-child{border-top:0}
 .custrow .nm{flex:1 1 180px;min-width:0;font-weight:600;overflow-wrap:anywhere}
@@ -252,6 +259,7 @@ th.num{text-align:right}
       <a href="#tambah" data-nav="tambah" aria-label="Tambah" title="Tambah"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4.5"/><path d="M12 8.5v7M8.5 12h7"/></svg></a>
       <a href="#customer" data-nav="customer" aria-label="Customer" title="Customer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.4-3.2 2.7-5 5.5-5s5.1 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14.2c2.4.1 3.8 1.6 4.2 4.3"/></svg></a>
     </nav>
+    <span class="chip pill" id="syncPill" hidden role="status"></span>
   </header>
 
   <div id="note" class="note glass" role="status" hidden></div>
@@ -280,28 +288,60 @@ th.num{text-align:right}
     <div id="recent" class="recent glass"></div>
 
     <div class="glass card" id="gsCard">
-      <div class="cardhead"><h3>Google Sheet</h3><span>Ekspor semua data ke Google Sheet, atau impor dari sana</span></div>
-      <div class="field">
-        <label for="gsUrl">Link atau ID spreadsheet</label>
-        <input type="text" id="gsUrl" autocomplete="off" placeholder="https://docs.google.com/spreadsheets/d/…">
-        <div class="hint" id="gsHint">Tab yang dipakai: Quotation dan Customer. Tab yang belum ada dibuat otomatis.</div>
+      <div class="cardhead"><h3>Sinkron Google Sheet</h3><span>Data tersimpan di spreadsheet Anda lewat Google Apps Script, dan otomatis sama di HP, laptop, dan perangkat lain</span></div>
+
+      <div id="gasOn" hidden>
+        <div class="gasstat" id="gasStat" role="status"></div>
+        <p class="hint" id="gasUrlShow" style="margin-top:10px;word-break:break-all"></p>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn" type="button" id="gasSync">Sinkron sekarang</button>
+          <button class="btn ghost" type="button" id="gasOffBtn">Putuskan sambungan</button>
+        </div>
       </div>
-      <div class="field" style="margin-top:16px">
-        <label class="switch"><input type="checkbox" id="gsAuto"><span class="track"></span><span id="gsAutoTxt">Sinkron otomatis</span></label>
-        <div class="hint">Setiap kali Anda menyimpan, mengubah, atau menghapus data, isi tab Quotation dan Customer di Google Sheet ikut diperbarui. Edit langsung di sheet akan tertimpa; untuk memasukkan data dari sheet, pakai Impor.</div>
+
+      <div id="gasOff">
+        <details class="how">
+          <summary>Cara memasang (sekali saja, sekitar 3 menit)</summary>
+          <ol class="gsteps" style="margin-top:10px">
+            <li>Buka Google Sheet Anda, lalu pilih menu <b>Ekstensi</b> → <b>Apps Script</b>.</li>
+            <li>Hapus semua isi <b>Code.gs</b>, tempel kode di bawah, lalu klik <b>Simpan</b>.</li>
+            <li>Klik <b>Terapkan</b> → <b>Deployment baru</b> → jenis <b>Aplikasi web</b>. Isi “Jalankan sebagai: Saya” dan “Yang memiliki akses: Siapa saja”, lalu klik <b>Terapkan</b> dan setujui izin aksesnya.</li>
+            <li>Salin <b>URL aplikasi web</b> (berakhiran /exec), tempel di kolom di bawah, lalu klik <b>Hubungkan</b>.</li>
+          </ol>
+          <div class="field" style="margin-top:14px">
+            <label for="gasCode">Kode Apps Script</label>
+            <textarea id="gasCode" class="codebox" readonly spellcheck="false"></textarea>
+            <div class="actions" style="margin-top:6px"><button class="btn ghost sm" type="button" id="gasCopy">Salin kode</button></div>
+          </div>
+        </details>
+        <div class="field" style="margin-top:16px">
+          <label for="gasUrl">URL aplikasi web Apps Script</label>
+          <input type="text" id="gasUrl" autocomplete="off" placeholder="https://script.google.com/macros/s/AKfycbxJ-7UdNjfimQ6yDQZ7VglqppTvsIh_uK_FNUMgfmMV0c1I5UexvDS2KYaP5M-wVlNe5w/exec">
+          <div class="hint">Data yang sudah ada di perangkat ini ikut dikirim ke Sheet saat pertama kali terhubung.</div>
+        </div>
+        <div class="actions" style="margin-top:14px"><button class="btn" type="button" id="gasConnect">Hubungkan</button></div>
+        <div id="gasMsg" aria-live="polite"></div>
       </div>
-      <div class="actions" style="margin-top:16px">
-        <button class="btn" type="button" id="gsExport">Ekspor ke Google Sheet</button>
-        <button class="btn ghost" type="button" id="gsImport">Impor dari Google Sheet</button>
-      </div>
+
       <div id="gsOut" aria-live="polite"></div>
-      <div class="gsstat" id="gsStat" aria-live="polite"></div>
       <div class="filebar">
-        <span class="lbl">Tanpa Google Sheet</span>
+        <span class="lbl">Cadangan file</span>
         <button class="btn ghost sm" type="button" id="csvQ">Unduh CSV quotation</button>
         <button class="btn ghost sm" type="button" id="csvC">Unduh CSV customer</button>
         <button class="btn ghost sm" type="button" id="csvImp">Impor file CSV</button>
         <input type="file" id="gsFile" accept=".csv,.tsv,.txt,text/csv" multiple hidden>
+      </div>
+      <div class="filebar">
+        <span class="lbl">Pindah data antar perangkat</span>
+        <button class="btn ghost sm" type="button" id="moveOut">Salin data ini</button>
+        <button class="btn ghost sm" type="button" id="moveIn">Tempel data dari tempat lain</button>
+      </div>
+      <div id="moveBox" hidden style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+        <textarea id="moveTa" rows="5" aria-label="Data untuk dipindah" spellcheck="false"></textarea>
+        <div class="actions" style="margin-top:0">
+          <button class="btn sm" type="button" id="moveDo">Impor data tempelan</button>
+          <button class="btn ghost sm" type="button" id="moveClose">Tutup</button>
+        </div>
       </div>
     </div>
   </section>
@@ -414,71 +454,15 @@ th.num{text-align:right}
 <script>
 (function(){
 'use strict';
-
-// PASTE URL WEB APP APPS SCRIPT ANDA DI SINI (WAJIB BERAKHIRAN /exec)
-var GAS_API_URL = "https://script.google.com/macros/s/AKfycbxJ-7UdNjfimQ6yDQZ7VglqppTvsIh_uK_FNUMgfmMV0c1I5UexvDS2KYaP5M-wVlNe5w/exec";
-
-var GS_SERVER='Google Sheets';
 var $=function(s){return document.querySelector(s)};
 var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var state={customers:[],quotations:[],loaded:false,route:'',editId:null,rows:[],custEditId:null,
   pendingDel:null,pendingCDel:null,query:'',selCust:null,
   gs:{busy:false,msg:null,confirmExport:false,imp:null}};
-var db=null,mcp=null,dl=null;
-
-/* ---------- SINKRONISASI CLOUD VIA GOOGLE APPS SCRIPT ---------- */
-function fetchCloudData() {
-  if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
-  
-  fetch(GAS_API_URL)
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data) {
-        var updated = false;
-        if (Array.isArray(data.customers)) {
-          state.customers = data.customers;
-          lsSet('rq_customers', data.customers);
-          updated = true;
-        }
-        if (Array.isArray(data.quotations)) {
-          state.quotations = data.quotations.map(norm);
-          lsSet('rq_quotations', state.quotations);
-          updated = true;
-        }
-        state.loaded = true;
-        hideNote();
-        afterData();
-      }
-    })
-    .catch(function(err) {
-      console.error('Gagal mengambil data dari cloud:', err);
-      state.loaded = true;
-      hideNote();
-      afterData();
-    });
-}
-
-function syncToCloud() {
-  if (!GAS_API_URL || GAS_API_URL.indexOf('script.google.com') === -1) return;
-  
-  var payload = {
-    customers: state.customers,
-    quotations: state.quotations
-  };
-
-  fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  })
-  .then(function(res) { return res.json(); })
-  .catch(function(err) {
-    console.error('Gagal menyimpan ke cloud:', err);
-  });
-}
+var db=null,dl=null;
 
 /* ---------- helpers ---------- */
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&','<':'<','>':'>','"':'"',"'":'\''}[c]})}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function pad(n){return String(n).padStart(2,'0')}
 function toStr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function today(){return toStr(new Date())}
@@ -489,7 +473,7 @@ function daysBetween(a,b){return Math.round((parseD(b)-parseD(a))/86400000)}
 var usd=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:4});
 var idr=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
 function money(v,c){return c==='USD'?usd.format(v):idr.format(v)}
-function pct(n){return (n||0).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'}
+function pct(n){return n.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'}
 function pts(n){return (n>=0?'+':'−')+Math.abs(n).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+' pt'}
 function newId(){return 'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function radio(name){var r=document.querySelector('input[name="'+name+'"]:checked');return r?r.value:''}
@@ -514,10 +498,10 @@ function calcMargin(price,pc,cost,cc,rate){
 function itemM(it,rate){return calcMargin(it.price,it.priceCur,it.cost,it.costCur,rate)}
 function avgMargin(qs){
   var s=0,n=0;
-  qs.forEach(function(r){if(Array.isArray(r.items))r.items.forEach(function(it){var m=itemM(it,r.rate);if(m){s+=m.pct;n++}})});
+  qs.forEach(function(r){r.items.forEach(function(it){var m=itemM(it,r.rate);if(m){s+=m.pct;n++}})});
   return n?s/n:null;
 }
-
+/* data lama dibaca ke bentuk baru: item banyak per quotation, price terms di level quotation */
 function norm(r){
   var o={};for(var k in r)o[k]=r[k];
   var items=Array.isArray(r.items)?r.items:[{item:r.item,price:r.price,priceCur:r.priceCur,cost:r.cost,costCur:r.costCur,terms:r.terms,remarks:r.remarks}];
@@ -526,43 +510,299 @@ function norm(r){
   return o;
 }
 
-/* ---------- storage ---------- */
-function saveDoc(coll, id, data) {
-  if (db) {
-    return db.collection(coll).doc(id).set(data).then(function(r) {
-      syncToCloud();
-      return r;
-    });
+/* ---------- parsing (impor) ---------- */
+function parseNum(v){
+  if(typeof v==='number')return v;
+  if(v==null)return NaN;
+  var s=String(v).trim();if(!s)return NaN;
+  s=s.replace(/[^\d.,\-]/g,'');if(!s||s==='-')return NaN;
+  var hasDot=s.indexOf('.')>=0,hasCom=s.indexOf(',')>=0;
+  if(hasDot&&hasCom){
+    if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');
+    else s=s.replace(/,/g,'');
+  }else if(hasCom){
+    if(/^-?\d{1,3}(,\d{3})+$/.test(s))s=s.replace(/,/g,'');else s=s.replace(',','.');
+  }else if(hasDot){
+    if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
   }
-  var arr = state[coll].filter(function(x) { return x.id !== id; });
-  var o = { id: id };
-  for (var k in data) o[k] = data[k];
-  arr.push(coll === 'quotations' ? norm(o) : o);
-  state[coll] = arr;
-  lsSet('rq_' + coll, arr);
-  afterData();
-  syncToCloud(); // <-- Berhasil simpan lokal & kirim ke Cloud tanpa error scheduleSync
+  return parseFloat(s);
+}
+function parsePct(v){
+  if(typeof v==='number')return (v>0&&v<=1)?v*100:v;
+  var s=String(v==null?'':v);var n=parseNum(s);
+  if(isNaN(n))return NaN;
+  return (s.indexOf('%')<0&&n>0&&n<=1)?n*100:n;
+}
+var MON={jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,agt:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12};
+function isoOf(y,m,d){if(m<1||m>12||d<1||d>31)return '';return y+'-'+pad(m)+'-'+pad(d)}
+function serialToIso(v){var dd=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);return isoOf(dd.getUTCFullYear(),dd.getUTCMonth()+1,dd.getUTCDate())}
+function parseDate(v){
+  if(v==null||v==='')return '';
+  if(typeof v==='number')return (v>20000&&v<80000)?serialToIso(v):'';
+  var s=String(v).trim(),m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return isoOf(+m[1],+m[2],+m[3]);
+  if((m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/))){
+    var a=+m[1],b=+m[2],y=+m[3];if(y<100)y+=2000;
+    if(b>12&&a<=12){var t=a;a=b;b=t}
+    return isoOf(y,b,a);
+  }
+  if((m=s.match(/^(\d{1,2})\s+([A-Za-z]+)\.?,?\s+(\d{4})/))){var mo=MON[m[2].slice(0,3).toLowerCase()];return mo?isoOf(+m[3],mo,+m[1]):''}
+  if(/^\d{5}$/.test(s))return serialToIso(+s);
+  return '';
+}
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,'');
+  var first=text.split('\n')[0]||'',cnt={',':0,';':0,'\t':0},i;
+  for(i=0;i<first.length;i++){if(cnt[first[i]]!==undefined)cnt[first[i]]++}
+  var d=Object.keys(cnt).reduce(function(a,b){return cnt[b]>cnt[a]?b:a},',');
+  var rows=[],row=[],cell='',q=false;
+  for(i=0;i<text.length;i++){
+    var ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===d){row.push(cell);cell=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);cell='';rows.push(row);row=[]}
+    else cell+=ch;
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row)}
+  return rows;
+}
+function csvCell(v){var s=v==null?'':String(v);return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+function toCSV(grid){return grid.map(function(r){return r.map(csvCell).join(',')}).join('\r\n')}
+
+function hkey(h){
+  var n=String(h==null?'':h).toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(!n)return '';
+  if(n.indexOf('matauang')>=0)return n.indexOf('cost')>=0?'ccur':'pcur';
+  if(n.indexOf('margin')>=0)return 'margin';
+  if(n.indexOf('tanggal')===0||n==='date')return 'date';
+  if(n==='customer'||n==='namacustomer')return 'cust';
+  if(n.indexOf('kurs')===0)return 'kurs';
+  if(n.indexOf('validity')===0||n.indexOf('kunci')===0||n.indexOf('lock')===0)return 'lock';
+  if(n.indexOf('terms')>=0)return 'terms';
+  if(n.indexOf('item')>=0)return 'item';
+  if(n.indexOf('quoteprice')>=0||n==='price'||n==='harga')return 'price';
+  if(n.indexOf('cost')===0)return 'cost';
+  if(n.indexOf('remark')>=0||n.indexOf('catatan')>=0)return 'remarks';
+  if(n.indexOf('quotation')>=0||n==='noquote'||n.indexOf('nomor')===0||n==='no')return 'no';
+  return '';
+}
+function colMap(head){var m={};(head||[]).forEach(function(h,i){var k=hkey(h);if(k&&m[k]===undefined)m[k]=i});return m}
+function cellOf(row,m,k){if(m[k]===undefined)return '';var v=row[m[k]];return v==null?'':v}
+function strOf(row,m,k){return String(cellOf(row,m,k)).trim()}
+function curOf(v,def){var s=String(v==null?'':v).toLowerCase();if(/usd|\$|dollar|dolar/.test(s))return 'USD';if(/idr|rp|rupiah/.test(s))return 'IDR';return def}
+
+/* grid quotation + grid customer -> {groups, customers, skipped} */
+function buildImport(q,c){
+  var res={groups:[],customers:[],skipped:0},m,r;
+  if(q&&q.length){
+    m=colMap(q[0]);
+    if(m.item===undefined||m.price===undefined||m.cust===undefined)
+      throw new Error('Header tab Quotation tidak sesuai. Butuh kolom Customer, Item Name, dan Quote Price.');
+    var map={},last=null;
+    for(r=1;r<q.length;r++){
+      var row=q[r]||[];
+      var item=strOf(row,m,'item'),cust=strOf(row,m,'cust'),no=strOf(row,m,'no'),pRaw=cellOf(row,m,'price');
+      if(!item&&!cust&&!no&&String(pRaw).trim()==='')continue;
+      if(!cust&&no&&last)cust=last.cust;
+      if(cust||no){
+        var key=cust.toLowerCase()+'|'+no.toLowerCase();
+        if(!map[key]){map[key]={cust:cust,no:no||'-',date:'',rate:NaN,lock:'',terms:'',items:[]};res.groups.push(map[key])}
+        last=map[key];
+      }
+      if(!last||!last.cust){res.skipped++;continue}
+      var price=parseNum(pRaw),cost=parseNum(cellOf(row,m,'cost'));
+      if(!item||!(price>0)||isNaN(cost)||cost<0){res.skipped++;continue}
+      if(!last.date)last.date=parseDate(cellOf(row,m,'date'));
+      if(!(last.rate>0)){var rt=parseNum(cellOf(row,m,'kurs'));if(rt>0)last.rate=rt}
+      if(!last.lock)last.lock=parseDate(cellOf(row,m,'lock'));
+      var tm=strOf(row,m,'terms');if(!last.terms&&tm)last.terms=/incl/i.test(tm)?'Include':'Exclude';
+      last.items.push({item:item,price:price,priceCur:curOf(cellOf(row,m,'pcur'),'IDR'),cost:cost,costCur:curOf(cellOf(row,m,'ccur'),'USD'),remarks:strOf(row,m,'remarks')});
+    }
+    res.groups=res.groups.filter(function(g){return g.items.length});
+  }
+  if(c&&c.length){
+    var cm=colMap(c[0]);
+    if(cm.cust!==undefined){
+      for(r=1;r<c.length;r++){
+        var cr=c[r]||[],nm=strOf(cr,cm,'cust');if(!nm)continue;
+        var ref=cm.margin!==undefined?parsePct(cellOf(cr,cm,'margin')):NaN;
+        res.customers.push({name:nm,ref:isNaN(ref)?null:ref});
+      }
+    }
+  }
+  return res;
+}
+
+/* ---------- storage ---------- */
+/* tiga mode: 'gas' (Google Apps Script, utama), 'db' (penyimpanan bersama artifact), 'local' (browser ini saja) */
+var GAS_DEFAULT='';
+var GAS_CODE="// Riwayat Quotation - sinkron lewat Google Apps Script\n// Pasang dari Google Sheet: Ekstensi > Apps Script. Data utama disimpan di tab \"_data\";\n// tab \"Quotation\" dan \"Customer\" dibuat ulang otomatis agar mudah dibaca.\n\nvar DATA_TAB = '_data';\nvar QHEAD = ['Tanggal', 'Customer', 'No. Quotation', 'Kurs (1 USD = Rp)', 'Validity s/d', 'Price Terms', 'Item Name', 'Quote Price', 'Mata Uang Quote', 'Cost', 'Mata Uang Cost', 'Margin (%)', 'Remarks'];\n\nfunction ss_() { return SpreadsheetApp.getActiveSpreadsheet(); }\n\nfunction out_(o) {\n  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);\n}\n\nfunction readAll_() {\n  var all = { customers: {}, quotations: {} };\n  var sh = ss_().getSheetByName(DATA_TAB);\n  if (!sh || sh.getLastRow() < 2) return all;\n  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues();\n  v.forEach(function (r) {\n    if (!r[0] || !r[1]) return;\n    try {\n      var d = JSON.parse(r[2]);\n      d.id = String(r[1]);\n      (r[0] === 'customers' ? all.customers : all.quotations)[d.id] = d;\n    } catch (e) {}\n  });\n  return all;\n}\n\nfunction writeAll_(all) {\n  var s = ss_();\n  var sh = s.getSheetByName(DATA_TAB) || s.insertSheet(DATA_TAB);\n  var rows = [];\n  Object.keys(all.customers).forEach(function (id) { rows.push(['customers', id, JSON.stringify(all.customers[id])]); });\n  Object.keys(all.quotations).forEach(function (id) { rows.push(['quotations', id, JSON.stringify(all.quotations[id])]); });\n  sh.clear();\n  sh.getRange(1, 1, 1, 3).setValues([['koleksi', 'id', 'data (jangan diubah)']]);\n  if (rows.length) sh.getRange(2, 1, rows.length, 3).setValues(rows);\n  try { sh.hideSheet(); } catch (e) {}\n}\n\nfunction put_(name, rows) {\n  var s = ss_();\n  var sh = s.getSheetByName(name) || s.insertSheet(name);\n  sh.clearContents();\n  sh.getRange(1, 1, rows.length, rows[0].length).setValues(rows);\n  sh.setFrozenRows(1);\n  sh.getRange(1, 1, 1, rows[0].length).setFontWeight('bold');\n}\n\nfunction readable_(all) {\n  var cs = Object.keys(all.customers).map(function (k) { return all.customers[k]; });\n  var qs = Object.keys(all.quotations).map(function (k) { return all.quotations[k]; })\n    .filter(function (r) { return !r.example; })\n    .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)) || (a.createdAt || 0) - (b.createdAt || 0); });\n  var q = [QHEAD];\n  qs.forEach(function (r) {\n    var c = all.customers[r.customerId];\n    var name = c ? c.name : (r.customerName || '');\n    (r.items || []).forEach(function (it) {\n      var m = typeof it.marginPct === 'number' ? Math.round(it.marginPct * 100) / 100 : '';\n      q.push([r.date || '', name, r.quoteNo || '', r.rate || '', r.lockUntil || '', r.terms || '', it.item || '', it.price, it.priceCur, it.cost, it.costCur, m, it.remarks || '']);\n    });\n  });\n  put_('Quotation', q);\n  var c2 = [['Nama Customer', 'Referensi Margin (%)']];\n  cs.filter(function (c) { return !c.example; })\n    .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); })\n    .forEach(function (c) { c2.push([c.name, typeof c.refMargin === 'number' ? c.refMargin : '']); });\n  put_('Customer', c2);\n}\n\nfunction doGet(e) {\n  try {\n    var all = readAll_();\n    return out_({\n      ok: true,\n      customers: Object.keys(all.customers).map(function (k) { return all.customers[k]; }),\n      quotations: Object.keys(all.quotations).map(function (k) { return all.quotations[k]; }),\n      time: Date.now()\n    });\n  } catch (err) {\n    return out_({ ok: false, error: String(err) });\n  }\n}\n\nfunction doPost(e) {\n  var lock = LockService.getScriptLock();\n  try {\n    lock.waitLock(25000);\n    var b = JSON.parse(e.postData.contents);\n    var all = readAll_();\n    (b.ops || []).forEach(function (o) {\n      var bucket = o.coll === 'customers' ? all.customers : (o.coll === 'quotations' ? all.quotations : null);\n      if (!bucket) return;\n      if (o.op === 'delete') { delete bucket[o.id]; }\n      else if (o.op === 'upsert') { var d = o.data || {}; d.id = o.id; bucket[o.id] = d; }\n    });\n    writeAll_(all);\n    readable_(all);\n    return out_({ ok: true, n: (b.ops || []).length });\n  } catch (err) {\n    return out_({ ok: false, error: String(err) });\n  } finally {\n    try { lock.releaseLock(); } catch (e2) {}\n  }\n}\n";
+var mode='local',gasUrl='';
+var queue=lsGet('rq_queue');
+var sync={busy:false,last:lsGetS('rq_gasLast'),err:''};
+var pollT=null,retryT=null,flushT=null,lastSig='';
+
+function persistCache(){lsSet('rq_customers',state.customers);lsSet('rq_quotations',state.quotations)}
+function applyLocal(coll,id,data){
+  var arr=state[coll].filter(function(x){return x.id!==id});
+  if(data){var o={id:id};for(var k in data)o[k]=data[k];arr.push(coll==='quotations'?norm(o):o)}
+  state[coll]=arr;
+}
+function saveDoc(coll,id,data){
+  if(mode==='gas'){
+    applyLocal(coll,id,data);persistCache();
+    queue.push({op:'upsert',coll:coll,id:id,data:data});lsSet('rq_queue',queue);
+    afterData();renderGas();flushSoon();
+    return Promise.resolve();
+  }
+  if(db){return db.collection(coll).doc(id).set(data)}
+  applyLocal(coll,id,data);lsSet('rq_'+coll,state[coll]);afterData();
   return Promise.resolve();
 }
-function delDoc(coll, id) {
-  if (db) {
-    return db.collection(coll).doc(id).delete().then(function(r) {
-      syncToCloud();
-      return r;
-    });
+function delDoc(coll,id){
+  if(mode==='gas'){
+    applyLocal(coll,id,null);persistCache();
+    queue.push({op:'delete',coll:coll,id:id});lsSet('rq_queue',queue);
+    afterData();renderGas();flushSoon();
+    return Promise.resolve();
   }
-  state[coll] = state[coll].filter(function(x) { return x.id !== id; });
-  lsSet('rq_' + coll, state[coll]);
-  afterData();
-  syncToCloud(); // <-- Berhasil hapus lokal & kirim ke Cloud
+  if(db){return db.collection(coll).doc(id).delete()}
+  applyLocal(coll,id,null);lsSet('rq_'+coll,state[coll]);afterData();
   return Promise.resolve();
 }
 function showNote(t){var n=$('#note');n.textContent=t;n.hidden=false}
 function hideNote(){$('#note').hidden=true}
+function subscribe(){
+  var got={customers:false,quotations:false};
+  var timer=setTimeout(function(){if(!state.loaded)showNote('Data belum bisa dijangkau. Periksa koneksi, lalu tunggu sebentar.')},10000);
+  ['customers','quotations'].forEach(function(name){
+    db.collection(name).onSnapshot(function(snap){
+      if(mode==='gas')return;
+      state[name]=snap.docs.map(function(d){var o=d.data();o.id=d.id;return name==='quotations'?norm(o):o});
+      got[name]=true;
+      if(got.customers&&got.quotations){state.loaded=true;clearTimeout(timer);hideNote()}
+      afterData();
+    },function(){showNote('Koneksi ke penyimpanan terputus. Muat ulang halaman untuk mencoba lagi.')});
+  });
+}
 
+/* ---------- sinkron Google Apps Script ---------- */
+async function gasFetch(url,opt){
+  var ctl=new AbortController(),t=setTimeout(function(){ctl.abort()},30000);
+  try{
+    var o={signal:ctl.signal,redirect:'follow'};for(var k in (opt||{}))o[k]=opt[k];
+    var r=await fetch(url,o),txt=await r.text(),j;
+    try{j=JSON.parse(txt)}catch(e){throw new Error('bukan_json')}
+    if(!j||!j.ok)throw new Error((j&&j.error)||'gagal');
+    return j;
+  }finally{clearTimeout(t)}
+}
+function gasPost(body){return gasFetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})}
+function gasLoad(url){var u=url||gasUrl;return gasFetch(u+(u.indexOf('?')<0?'?':'&')+'action=load&_='+Date.now())}
+function gasMsg(e){
+  var m=String(e&&e.message||e||'');
+  if(e&&e.name==='AbortError')return 'Waktu habis. Coba lagi sebentar lagi.';
+  if(m==='bukan_json')return 'Balasan bukan dari Apps Script. Pastikan akses deployment diatur “Siapa saja” dan URL berakhiran /exec.';
+  if(e instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(m))return 'Tidak bisa menjangkau Apps Script. Periksa internet, URL, dan akses “Siapa saja”.';
+  return m||'Terjadi kesalahan.';
+}
+function stamp(){
+  var d=new Date();sync.last=pad(d.getDate())+'/'+pad(d.getMonth()+1)+' '+pad(d.getHours())+'.'+pad(d.getMinutes());
+  lsSetS('rq_gasLast',sync.last);
+}
+function flushSoon(){clearTimeout(flushT);flushT=setTimeout(flush,600)}
+async function flush(){
+  if(mode!=='gas'||sync.busy||!queue.length)return;
+  sync.busy=true;renderGas();
+  var ops=queue.slice();
+  try{
+    await gasPost({action:'batch',ops:ops});
+    queue.splice(0,ops.length);lsSet('rq_queue',queue);
+    sync.err='';stamp();
+  }catch(e){
+    sync.err=gasMsg(e);clearTimeout(retryT);retryT=setTimeout(flush,15000);
+  }
+  sync.busy=false;renderGas();
+  if(queue.length&&!sync.err)flush();
+}
+async function pull(){
+  if(mode!=='gas'||sync.busy)return;
+  try{
+    var j=await gasLoad();
+    var c={},q={};
+    (j.customers||[]).forEach(function(d){c[d.id]=d});
+    (j.quotations||[]).forEach(function(d){q[d.id]=d});
+    queue.forEach(function(o){
+      var b=o.coll==='customers'?c:q;
+      if(o.op==='delete')delete b[o.id];
+      else{var d={id:o.id};for(var k in o.data)d[k]=o.data[k];b[o.id]=d}
+    });
+    var cs=Object.keys(c).map(function(k){return c[k]}),qs=Object.keys(q).map(function(k){return norm(q[k])});
+    var sig=JSON.stringify([cs,qs]);
+    var changed=sig!==lastSig||!state.loaded;
+    lastSig=sig;
+    state.customers=cs;state.quotations=qs;persistCache();
+    state.loaded=true;sync.err='';if(!queue.length)stamp();hideNote();
+    if(changed)afterData();
+  }catch(e){
+    sync.err=gasMsg(e);
+    if(!state.loaded){state.loaded=true;afterData()}
+    showNote('Belum bisa sinkron: '+sync.err+' Data yang tampil adalah salinan terakhir di perangkat ini.');
+  }
+  renderGas();
+}
+function startGas(){
+  mode='gas';
+  state.customers=lsGet('rq_customers');state.quotations=lsGet('rq_quotations').map(norm);
+  state.loaded=state.customers.length>0||state.quotations.length>0;
+  hideNote();afterData();renderGas();
+  pull().then(function(){flush()});
+  clearInterval(pollT);
+  pollT=setInterval(function(){if(!document.hidden){pull();flush()}},20000);
+}
+document.addEventListener('visibilitychange',function(){if(mode==='gas'&&!document.hidden){pull();flush()}});
+window.addEventListener('online',function(){if(mode==='gas'){pull();flush()}});
+async function connectGas(url){
+  var j=await gasLoad(url);
+  var rc={},rq={};
+  (j.customers||[]).forEach(function(d){rc[d.id]=1});
+  (j.quotations||[]).forEach(function(d){rq[d.id]=1});
+  var add=function(coll,list,have){
+    list.filter(function(x){return !x.example&&!have[x.id]}).forEach(function(x){
+      var d={};for(var k in x)if(k!=='id')d[k]=x[k];
+      queue.push({op:'upsert',coll:coll,id:x.id,data:d});
+    });
+  };
+  add('customers',state.customers,rc);add('quotations',state.quotations,rq);
+  lsSet('rq_queue',queue);persistCache();
+  gasUrl=url;lsSetS('rq_gasUrl',url);
+  if(db){try{await db.doc('settings/app').set({gasUrl:url})}catch(e){}}
+  state.loaded=false;lastSig='';
+  startGas();
+}
+function renderGas(){
+  var on=mode==='gas';
+  $('#gasOn').hidden=!on;$('#gasOff').hidden=on;
+  var pill=$('#syncPill');pill.hidden=!on;
+  if(!on)return;
+  var t,k='ok';
+  if(sync.err){t='Gagal sinkron: '+sync.err+(queue.length?' ('+queue.length+' perubahan menunggu, dicoba lagi otomatis)':'');k='err'}
+  else if(sync.busy)t='Menyimpan ke Google Sheet…';
+  else if(queue.length)t=queue.length+' perubahan menunggu dikirim…';
+  else t='Tersinkron dengan Google Sheet'+(sync.last?' · '+sync.last:'');
+  $('#gasStat').textContent=t;$('#gasStat').setAttribute('data-k',k);
+  $('#gasUrlShow').textContent='Terhubung ke: '+gasUrl;
+  $('#gasSync').disabled=sync.busy;
+  pill.className='chip pill '+(sync.err?'warn':(sync.busy||queue.length?'acc':'good'));
+  pill.textContent=sync.err?'Belum sinkron':(sync.busy||queue.length?'Menyinkronkan…':'Tersinkron');
+}
+
+/* ---------- toast ---------- */
 var toastT=null;
 function toast(t){var e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){e.hidden=true},3200)}
 
+/* ---------- routing ---------- */
 function route(){
   var h=(location.hash||'').replace('#','');
   if(['tambah','cari','customer'].indexOf(h)<0)h='';
@@ -581,6 +821,7 @@ function route(){
 }
 window.addEventListener('hashchange',route);
 
+/* ---------- render: data views ---------- */
 function afterData(){
   refreshCustSelect();
   renderHome();
@@ -596,10 +837,10 @@ function sortedQuotes(list){
     return (b.createdAt||0)-(a.createdAt||0);
   });
 }
-
+/* penawaran dalam USD: margin disebut estimasi (bergantung kurs dan cost) */
 function estPre(cur){return cur==='USD'?'Est. ':''}
 function allUsd(items){return items.length>0&&items.every(function(it){return it.priceCur==='USD'})}
-function qItems(qs){var a=[];qs.forEach(function(r){if(Array.isArray(r.items))a=a.concat(r.items)});return a}
+function qItems(qs){var a=[];qs.forEach(function(r){a=a.concat(r.items)});return a}
 function marginChipM(m,ref,cur){
   if(!m)return '<span class="chip">butuh kurs</span>';
   var cls='acc',sub='';
@@ -621,27 +862,27 @@ function renderHome(){
   if(!state.loaded){box.innerHTML='<div class="empty">Memuat data…</div>';return}
   if(!q.length){box.innerHTML='<div class="empty"><b>Belum ada quotation</b><span>Tambahkan yang pertama lewat menu Tambah.</span></div>';return}
   box.innerHTML=q.map(function(r){
-    var first=(r.items&&r.items[0])?r.items[0].item:'',more=(r.items&&r.items.length>1)?' · +'+(r.items.length-1)+' item lain':'';
+    var first=r.items[0]?r.items[0].item:'',more=r.items.length>1?' · +'+(r.items.length-1)+' item lain':'';
     var a=avgMargin([r]),ref=custRef(r);
     return '<div class="row"><div><div class="who">'+esc(custName(r))+exTag(r)+'</div><div class="when">'+fmtDate(r.date)+' · '+esc(r.quoteNo)+'</div></div>'+
       '<div class="what">'+esc(first)+'<span class="muted">'+more+'</span></div>'+
-      '<div>'+(a!==null?'<span class="chip '+(ref!==null&&a<ref?'warn':'good')+'">'+(allUsd(r.items||[])?'Est. ':'')+pct(a)+'</span>':'')+'</div></div>';
+      '<div>'+(a!==null?'<span class="chip '+(ref!==null&&a<ref?'warn':'good')+'">'+(allUsd(r.items)?'Est. ':'')+pct(a)+'</span>':'')+'</div></div>';
   }).join('');
 }
 
+/* ----- cari: kartu customer + detail ----- */
 function groupByCustomer(){
   var by={};
   state.quotations.forEach(function(r){(by[r.customerId]=by[r.customerId]||[]).push(r)});
   return by;
 }
-function nameOfGroup(id,qs){var c=custById(id);return c?c.name:(qs[0]?qs[0].customerName:'')}
+function nameOfGroup(id,qs){var c=custById(id);return c?c.name:qs[0].customerName}
 function updateRailBtns(){
   var rl=$('#rail'),b=$('#railBtns');
   if(!rl||!b)return;
   b.hidden=rl.scrollWidth<=rl.clientWidth+2;
 }
 window.addEventListener('resize',updateRailBtns);
-
 function renderCari(){
   var box=$('#cariBody');
   var by=groupByCustomer(),ids=Object.keys(by);
@@ -666,7 +907,7 @@ function renderCari(){
   var cards=list.map(function(c){
     var items=0,last='',lockEnd='';
     c.qs.forEach(function(r){
-      items+=(r.items?r.items.length:0);
+      items+=r.items.length;
       if(r.date>last)last=r.date;
       if(r.lockUntil&&daysBetween(today(),r.lockUntil)>=0&&r.lockUntil>lockEnd)lockEnd=r.lockUntil;
     });
@@ -684,10 +925,9 @@ function renderCari(){
     '<div class="rail" id="rail" tabindex="0" aria-label="Daftar kartu customer"><div class="railgrid">'+cards+'</div></div>';
   updateRailBtns();
 }
-
 function renderDetail(qs,id){
   var box=$('#cariBody'),name=nameOfGroup(id,qs),cu=custById(id),ref=cu&&typeof cu.refMargin==='number'?cu.refMargin:null;
-  var a=avgMargin(qs),n=0;qs.forEach(function(r){n+=(r.items?r.items.length:0)});
+  var a=avgMargin(qs),n=0;qs.forEach(function(r){n+=r.items.length});
   var h='<div class="stickybar glass"><button type="button" class="btn ghost sm back" data-act="back" aria-label="'+(state.backTo==='customer'?'Kembali ke database customer':'Kembali ke semua customer')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>'+(state.backTo==='customer'?'Database customer':'Semua customer')+'</span></button>'+
     '<h3 class="sname" title="'+esc(name)+'">'+esc(name)+'</h3>'+
     '<span class="schips"><span class="chip">'+qs.length+' quotation · '+n+' item</span>'+
@@ -697,7 +937,7 @@ function renderDetail(qs,id){
     var act=state.pendingDel===r.id
       ?'<div class="rowact"><button class="btn sm danger" data-act="delok" data-id="'+esc(r.id)+'">Ya, hapus</button><button class="btn sm ghost" data-act="delno">Batal</button></div>'
       :'<div class="rowact"><button class="btn sm ghost" data-act="edit" data-id="'+esc(r.id)+'">Ubah</button><button class="btn sm ghost" data-act="del" data-id="'+esc(r.id)+'">Hapus</button></div>';
-    var rows=(r.items||[]).map(function(it){
+    var rows=r.items.map(function(it){
       var m=itemM(it,r.rate);
       return '<tr><td class="itemcell">'+esc(it.item)+'</td>'+
         '<td class="num strong">'+money(it.price,it.priceCur)+'</td>'+
@@ -722,7 +962,6 @@ function fitCustList(){
   box.style.maxHeight=(h+8)+'px';
 }
 window.addEventListener('resize',fitCustList);
-
 function renderCustomers(){
   var box=$('#custList');
   if(!state.loaded){box.innerHTML='<div class="empty">Memuat data…</div>';$('#cCount').textContent='';return}
@@ -745,6 +984,7 @@ function renderCustomers(){
   fitCustList();
 }
 
+/* ---------- form tambah: data quotation ---------- */
 function refreshCustSelect(){
   var sel=$('#fCust'),cur=sel.value;
   var list=state.customers.slice().sort(function(a,b){return a.name.localeCompare(b.name,'id')});
@@ -772,6 +1012,7 @@ function setLockUI(on){
 }
 function showErr(id,msg){var e=$(id);if(msg){e.textContent=msg;e.hidden=false}else{e.hidden=true}return false}
 
+/* ---------- form tambah: tabel item massal ---------- */
 function blankRow(prev){return {item:'',price:'',priceCur:prev?prev.priceCur:'IDR',cost:'',costCur:prev?prev.costCur:'USD',remarks:''}}
 function addRows(n){for(var i=0;i<n;i++)state.rows.push(blankRow(state.rows[state.rows.length-1]))}
 function rowHas(r){return r.item.trim()!==''||String(r.price)!==''||String(r.cost)!==''||r.remarks.trim()!==''}
@@ -829,7 +1070,27 @@ $('#itemRows').addEventListener('click',function(e){
   if(!state.rows.length)addRows(1);
   renderRows();
 });
-
+$('#itemRows').addEventListener('paste',function(e){
+  var t=e.target,f=t.getAttribute&&t.getAttribute('data-f');
+  var order=['item','price','cost','remarks'],start=order.indexOf(f);
+  if(start<0)return;
+  var txt=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\r/g,'');
+  var lines=txt.split('\n');while(lines.length&&lines[lines.length-1]==='')lines.pop();
+  if(lines.length<2&&txt.indexOf('\t')<0)return;
+  e.preventDefault();
+  var i0=parseInt(t.closest('tr').getAttribute('data-i'),10);
+  lines.forEach(function(line,k){
+    while(state.rows.length<=i0+k)addRows(1);
+    line.split('\t').forEach(function(v,j){
+      var fld=order[start+j];if(!fld)return;
+      v=v.trim();
+      if(fld==='price'||fld==='cost'){var n=parseNum(v);v=isNaN(n)?'':String(n)}
+      state.rows[i0+k][fld]=v;
+    });
+  });
+  renderRows();
+  toast(lines.length+' baris ditempel');
+});
 $('#btnAddRow').addEventListener('click',function(){addRows(1);renderRows();focusCell(state.rows.length-1,'item')});
 $('#btnAddRows5').addEventListener('click',function(){addRows(5);renderRows();focusCell(state.rows.length-5,'item')});
 
@@ -856,12 +1117,11 @@ function startEdit(id){
   $('#fDate').value=r.date;$('#fCust').value=r.customerId;$('#fNo').value=r.quoteNo;$('#fRate').value=r.rate||'';
   setRadio('terms',r.terms);
   $('#lockOn').checked=!!r.lockUntil;setLockUI(!!r.lockUntil);if(r.lockUntil)$('#fLock').value=r.lockUntil;
-  state.rows=(r.items||[]).map(function(it){return {item:it.item,price:String(it.price),priceCur:it.priceCur,cost:String(it.cost),costCur:it.costCur,remarks:it.remarks||''}});
+  state.rows=r.items.map(function(it){return {item:it.item,price:String(it.price),priceCur:it.priceCur,cost:String(it.cost),costCur:it.costCur,remarks:it.remarks||''}});
   renderRows();
   showErr('#formErr','');updateHint();
   setTimeout(function(){window.scrollTo(0,0)},0);
 }
-
 function saveQuotation(){
   showErr('#formErr','');
   var custId=$('#fCust').value,date=$('#fDate').value,no=$('#fNo').value.trim(),rate=readNum('#fRate');
@@ -905,7 +1165,7 @@ function saveQuotation(){
     }
   },function(err){
     btn.disabled=false;
-    showErr('#formErr','Gagal menyimpan. Coba lagi sebentar lagi.');
+    showErr('#formErr',err&&err.code==='invalid_argument'?'Anda tidak punya izin menyimpan data di halaman ini.':'Gagal menyimpan. Coba lagi sebentar lagi.');
   });
 }
 $('#btnSave').addEventListener('click',saveQuotation);
@@ -920,6 +1180,7 @@ $('#lockChips').addEventListener('click',function(e){
   else $('#fLock').value=addDays(base,parseInt(d,10));
 });
 
+/* ---------- cari ---------- */
 $('#q').addEventListener('input',function(e){state.query=e.target.value;state.selCust=null;state.pendingDel=null;renderCari()});
 $('#cariBody').addEventListener('click',function(e){
   var card=e.target.closest('[data-cid]');
@@ -940,6 +1201,7 @@ $('#cariBody').addEventListener('click',function(e){
   else if(act==='delok'){state.pendingDel=null;delDoc('quotations',id).then(function(){toast('Quotation dihapus')},function(){toast('Gagal menghapus')})}
 });
 
+/* ---------- customer ---------- */
 function cancelCustEdit(){
   state.custEditId=null;$('#cName').value='';$('#cRef').value='';
   $('#cTitle').textContent='Tambah customer';$('#cSave').textContent='Simpan customer';$('#cCancel').hidden=true;showErr('#cErr','');
@@ -979,23 +1241,218 @@ $('#custList').addEventListener('click',function(e){
   else if(act==='cdelok'){state.pendingCDel=null;delDoc('customers',id).then(function(){toast('Customer dihapus. Riwayat quotation tetap tersimpan.')},function(){toast('Gagal menghapus')})}
 });
 
-/* ---------- INIALISASI APLIKASI ---------- */
+/* ---------- csv + pindah data ---------- */
+var QHEAD=['Tanggal','Customer','No. Quotation','Kurs (1 USD = Rp)','Validity s/d','Price Terms','Item Name','Quote Price','Mata Uang Quote','Cost','Mata Uang Cost','Margin (%)','Remarks'];
+var CHEAD=['Nama Customer','Referensi Margin (%)'];
+function realDoc(x){return !x.example}
+function quoteGrid(){
+  var out=[QHEAD];
+  sortedQuotes(state.quotations.filter(realDoc)).reverse().forEach(function(r){
+    r.items.forEach(function(it){
+      var m=itemM(it,r.rate);
+      out.push([r.date,custName(r),r.quoteNo,r.rate||'',r.lockUntil||'',r.terms,it.item,it.price,it.priceCur,it.cost,it.costCur,m?Math.round(m.pct*100)/100:'',it.remarks||'']);
+    });
+  });
+  return out;
+}
+function custGrid(){
+  var out=[CHEAD];
+  state.customers.filter(realDoc).sort(function(a,b){return a.name.localeCompare(b.name,'id')}).forEach(function(c){out.push([c.name,typeof c.refMargin==='number'?c.refMargin:''])});
+  return out;
+}
+function gsSet(patch){for(var k in patch)state.gs[k]=patch[k];renderGS()}
+function renderGS(){
+  var g=state.gs,h='';
+  if(g.msg)h+='<div class="msg '+g.msg.t+'">'+esc(g.msg.x)+'</div>';
+  if(g.imp&&!g.busy){
+    var i=g.imp;
+    h+='<div class="gspreview"><b>Siap diimpor</b><ul>'+
+      '<li>'+i.groups.length+' quotation ('+i.itemCount+' item): '+i.newQ+' baru, '+i.overQ+' menimpa quotation dengan nomor yang sama</li>'+
+      '<li>'+i.newC+' customer baru'+(i.updC?', '+i.updC+' referensi margin diperbarui':'')+(i.autoC?' (ref margin '+i.autoC+' customer baru diset 0%, atur di menu Customer)':'')+'</li>'+
+      (i.skipped?'<li>'+i.skipped+' baris dilewati karena item, harga, atau cost tidak valid</li>':'')+
+      '</ul><div class="rowact"><button class="btn sm" data-act="gsdoimport">Impor sekarang</button><button class="btn sm ghost" data-act="gscancel">Batal</button></div></div>';
+  }
+  $('#gsOut').innerHTML=h;
+}
+function prepareImport(res){
+  var cmap={};state.customers.forEach(function(c){cmap[c.name.trim().toLowerCase()]=c});
+  var newNames={},updC=0,newQ=0,overQ=0,itemCount=0,autoC=0;
+  res.customers.forEach(function(c){
+    var ex=cmap[c.name.toLowerCase()];
+    if(!ex)newNames[c.name.toLowerCase()]=true;
+    else if(typeof c.ref==='number'&&ex.refMargin!==c.ref)updC++;
+  });
+  res.groups.forEach(function(g){
+    itemCount+=g.items.length;
+    var k=g.cust.toLowerCase(),cu=cmap[k];
+    if(!cu&&!newNames[k]){newNames[k]=true;autoC++}
+    var dupe=cu&&state.quotations.some(function(r){return r.customerId===cu.id&&String(r.quoteNo).toLowerCase()===g.no.toLowerCase()});
+    if(dupe)overQ++;else newQ++;
+  });
+  res.newQ=newQ;res.overQ=overQ;res.itemCount=itemCount;res.newC=Object.keys(newNames).length;res.updC=updC;res.autoC=autoC;
+  return res;
+}
+function showImportPreview(res){
+  if(!res.groups.length&&!res.customers.length){
+    gsSet({busy:false,imp:null,msg:{t:'err',x:'Tidak ada data yang bisa diimpor. Pastikan ada kolom Customer, Item Name, Quote Price, dan Cost.'}});return;
+  }
+  gsSet({busy:false,imp:prepareImport(res),msg:null});
+}
+async function applyImport(){
+  var imp=state.gs.imp;if(!imp)return;
+  gsSet({busy:true,imp:null,msg:{t:'info',x:'Mengimpor data…'}});
+  try{
+    var byName={};state.customers.forEach(function(c){byName[c.name.trim().toLowerCase()]=c});
+    var i,k,c,ex,id;
+    for(i=0;i<imp.customers.length;i++){
+      c=imp.customers[i];k=c.name.toLowerCase();ex=byName[k];
+      if(ex){
+        if(typeof c.ref==='number'&&ex.refMargin!==c.ref){
+          await saveDoc('customers',ex.id,{name:ex.name,refMargin:c.ref,createdAt:ex.createdAt||Date.now()});
+          byName[k]={id:ex.id,name:ex.name,refMargin:c.ref,createdAt:ex.createdAt};
+        }
+      }else{
+        id=newId();
+        await saveDoc('customers',id,{name:c.name,refMargin:typeof c.ref==='number'?c.ref:0,createdAt:Date.now()});
+        byName[k]={id:id,name:c.name,refMargin:typeof c.ref==='number'?c.ref:0};
+      }
+    }
+    var nq=0;
+    for(i=0;i<imp.groups.length;i++){
+      var g=imp.groups[i];k=g.cust.toLowerCase();var cu=byName[k];
+      if(!cu){id=newId();await saveDoc('customers',id,{name:g.cust,refMargin:0,createdAt:Date.now()});cu=byName[k]={id:id,name:g.cust,refMargin:0}}
+      var old=state.quotations.filter(function(r){return r.customerId===cu.id&&String(r.quoteNo).toLowerCase()===g.no.toLowerCase()})[0];
+      var rate=g.rate>0?g.rate:null,now=Date.now();
+      var items=g.items.map(function(it){var m=itemM(it,rate);it.marginPct=m?m.pct:null;it.marginAmt=m?m.amt:null;return it});
+      await saveDoc('quotations',old?old.id:newId(),{
+        date:g.date||today(),customerId:cu.id,customerName:cu.name,refMargin:typeof cu.refMargin==='number'?cu.refMargin:null,
+        quoteNo:g.no,rate:rate,terms:g.terms||'Exclude',lockUntil:g.lock||'',items:items,
+        createdAt:old&&old.createdAt?old.createdAt:now,updatedAt:now});
+      nq++;
+    }
+    gsSet({busy:false,msg:{t:'ok',x:'Impor selesai: '+nq+' quotation ('+imp.itemCount+' item) dan '+imp.customers.length+' baris customer diproses.'}});
+    toast('Impor selesai');
+  }catch(e){gsSet({busy:false,msg:{t:'err',x:'Impor berhenti di tengah jalan. Data yang sudah masuk tetap tersimpan.'}})}
+}
+$('#gsOut').addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b)return;
+  var a=b.getAttribute('data-act');
+  if(a==='gsdoimport')applyImport();
+  else if(a==='gscancel')gsSet({imp:null,msg:null});
+});
+
+function saveFile(name,text){
+  if(!dl){toast('Unduhan tidak tersedia di tampilan ini. Pakai Salin data ini.');return}
+  dl.save({filename:name,data:'﻿'+text}).then(function(){toast('File disimpan')},function(e){
+    if(e&&e.code==='declined')toast('Unduhan dibatalkan');else toast('Gagal menyimpan file');
+  });
+}
+$('#csvQ').addEventListener('click',function(){
+  if(!state.quotations.some(realDoc)){toast('Belum ada quotation untuk diunduh');return}
+  saveFile('riwayat-quotation-'+today().replace(/-/g,'')+'.csv',toCSV(quoteGrid()));
+});
+$('#csvC').addEventListener('click',function(){
+  if(!state.customers.some(realDoc)){toast('Belum ada customer untuk diunduh');return}
+  saveFile('customer-'+today().replace(/-/g,'')+'.csv',toCSV(custGrid()));
+});
+$('#csvImp').addEventListener('click',function(){$('#gsFile').click()});
+$('#gsFile').addEventListener('change',function(e){
+  var files=Array.prototype.slice.call(e.target.files||[]);e.target.value='';
+  if(!files.length)return;
+  gsSet({busy:true,imp:null,msg:{t:'info',x:'Membaca file…'}});
+  Promise.all(files.map(function(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(parseCSV(r.result))};r.onerror=function(){rej(new Error('File tidak bisa dibaca.'))};r.readAsText(f)})}))
+  .then(function(grids){
+    var q=null,c=null;
+    grids.forEach(function(g){
+      if(!g.length)return;
+      var m=colMap(g[0]);
+      if(m.item!==undefined&&m.price!==undefined)q=g;
+      else if(m.cust!==undefined)c=g;
+    });
+    if(!q&&!c)throw new Error('Isi file tidak dikenali. Pakai file hasil Unduh CSV, atau pastikan baris pertama berisi nama kolom.');
+    showImportPreview(buildImport(q,c));
+  }).catch(function(err){gsSet({busy:false,msg:{t:'err',x:err.message||'Gagal membaca file.'}})});
+});
+
+function copyText(text,ta){
+  var done=function(){toast('Tersalin')};
+  var manual=function(){if(ta){ta.focus();ta.select()}toast('Salin manual: teks sudah terpilih, tekan Ctrl+C atau tahan lalu Salin')};
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,manual);return}}catch(e){}
+  manual();
+}
+function moveShow(m){$('#moveBox').hidden=false;$('#moveDo').hidden=m!=='in'}
+$('#moveOut').addEventListener('click',function(){
+  var cs=state.customers.filter(realDoc),qs=state.quotations.filter(realDoc);
+  if(!cs.length&&!qs.length){toast('Belum ada data untuk disalin');return}
+  var txt=JSON.stringify({rq:1,customers:cs,quotations:qs});
+  moveShow('out');var ta=$('#moveTa');ta.value=txt;ta.focus();ta.select();
+  copyText(txt,ta);
+});
+$('#moveIn').addEventListener('click',function(){moveShow('in');$('#moveTa').value='';$('#moveTa').focus()});
+$('#moveClose').addEventListener('click',function(){$('#moveBox').hidden=true;$('#moveTa').value=''});
+$('#moveDo').addEventListener('click',async function(){
+  var d;
+  try{d=JSON.parse($('#moveTa').value.trim())}catch(e){toast('Teks tidak dikenali. Tempel hasil dari tombol Salin data.');return}
+  if(!d||d.rq!==1||!Array.isArray(d.customers)||!Array.isArray(d.quotations)){toast('Teks tidak dikenali. Tempel hasil dari tombol Salin data.');return}
+  var btn=this;btn.disabled=true;var n=0,i,k;
+  try{
+    for(i=0;i<d.customers.length;i++){var c=d.customers[i];if(!c||!c.id||!c.name)continue;var cd={};for(k in c)if(k!=='id')cd[k]=c[k];await saveDoc('customers',c.id,cd);n++}
+    for(i=0;i<d.quotations.length;i++){var q=d.quotations[i];if(!q||!q.id||!Array.isArray(q.items))continue;var qd={};for(k in q)if(k!=='id')qd[k]=q[k];await saveDoc('quotations',q.id,qd);n++}
+    toast('Selesai: '+n+' data dipindahkan');$('#moveBox').hidden=true;$('#moveTa').value='';
+  }catch(e){toast('Berhenti di tengah jalan. Data yang sudah masuk tetap tersimpan.')}
+  btn.disabled=false;
+});
+
+/* ---------- google apps script: tombol ---------- */
+$('#gasCode').value=GAS_CODE;
+$('#gasCopy').addEventListener('click',function(){copyText(GAS_CODE,$('#gasCode'))});
+$('#gasConnect').addEventListener('click',async function(){
+  var u=$('#gasUrl').value.trim(),box=$('#gasMsg');
+  if(!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(u)){box.innerHTML='<div class="msg err">Tempel URL aplikasi web dari Apps Script. Bentuknya https://script.google.com/macros/s/…/exec</div>';return}
+  var btn=this;btn.disabled=true;box.innerHTML='<div class="msg info">Menghubungkan dan memeriksa Sheet…</div>';
+  try{await connectGas(u);box.innerHTML='';toast('Tersambung ke Google Sheet')}
+  catch(e){box.innerHTML='<div class="msg err">'+esc(gasMsg(e))+'</div>'}
+  btn.disabled=false;
+});
+$('#gasSync').addEventListener('click',async function(){await pull();await flush();toast(sync.err?'Belum berhasil sinkron':'Tersinkron')});
+var offT=null;
+$('#gasOffBtn').addEventListener('click',function(){
+  var b=this;
+  if(b.getAttribute('data-armed')!=='1'){
+    b.setAttribute('data-armed','1');b.textContent='Ya, putuskan';
+    clearTimeout(offT);offT=setTimeout(function(){b.removeAttribute('data-armed');b.textContent='Putuskan sambungan'},4000);return;
+  }
+  clearTimeout(offT);
+  lsSetS('rq_gasUrl','');
+  var fin=function(){location.reload()};
+  if(db){db.doc('settings/app').set({gasUrl:''}).then(fin,fin)}else fin();
+});
+
+/* ---------- init ---------- */
 $('#fDate').value=today();
 setLockUI(false);
 addRows(5);renderRows();
-
-(function init(){
-  // Muat data cadangan lokal terlebih dahulu agar UI langsung responsif
-  state.customers=lsGet('rq_customers');
-  state.quotations=lsGet('rq_quotations').map(norm);
-  state.loaded=true;
-  
-  route();
-  afterData();
-  
-  // Ambil data terbaru dari cloud di latar belakang
-  fetchCloudData();
+route();
+renderHome();renderCari();renderCustomers();refreshCustSelect();renderGS();renderGas();
+(async function init(){
+  var d=null,v=null;
+  try{d=await (window.claude&&window.claude.use?window.claude.use('db'):null)}catch(e){}
+  db=d||null;
+  try{v=await (window.claude&&window.claude.use?window.claude.use('downloads'):null)}catch(e){}
+  dl=v||null;
+  var u=lsGetS('rq_gasUrl')||GAS_DEFAULT;
+  if(!u&&db){
+    try{var sn=await db.doc('settings/app').get();var dd=sn&&sn.exists?sn.data():null;if(dd&&dd.gasUrl)u=dd.gasUrl}catch(e){}
+  }
+  if(u){gasUrl=u;startGas();return}
+  if(db){subscribe()}
+  else{
+    state.customers=lsGet('rq_customers');state.quotations=lsGet('rq_quotations').map(norm);state.loaded=true;
+    showNote('Penyimpanan bersama tidak aktif di tampilan ini. Data hanya tersimpan di browser ini dan tidak akan muncul di laptop atau HP lain. Hubungkan Google Sheet di Beranda agar data selalu sama di semua perangkat.');
+    afterData();
+  }
 })();
 })();
 </script>
+
 </body></html>
